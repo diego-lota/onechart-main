@@ -1,0 +1,23 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: argocd
+
+generatorOptions:
+  disableNameSuffixHash: true
+  labels:
+    product: argo
+
+configMapGenerator:
+  - name: argocd-cm
+    behavior: merge
+    literals:
+    - |
+      repository.credentials=- passwordSecret:
+          key: git_token
+          name: autopilot-secret
+        url: https://github.com/octaviius
+        usernameSecret:
+          key: git_username
+          name: autopilot-secret
+resources:
+  - github.com/argoproj-labs/argocd-autopilot/manifests/base?ref=v0.4.4

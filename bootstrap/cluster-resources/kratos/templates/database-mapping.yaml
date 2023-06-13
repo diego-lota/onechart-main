@@ -1,0 +1,11 @@
+apiVersion: getambassador.io/v3alpha1
+kind: TCPMapping
+metadata:
+  name: database-tcp-mapping
+  namespace: {{ .Release.Namespace }}
+  labels:
+    product: database
+spec:
+    port: 5432
+    host: db.{{ .Values.env }}.{{ .Values.dns.hostname }}
+    service: database.{{ .Release.Namespace }}

@@ -1,0 +1,18 @@
+apiVersion: getambassador.io/v3alpha1
+kind: Mapping
+metadata:
+  annotations:
+  labels:
+    product: argo
+  name: argocd-ui
+  namespace: ambassador
+spec:
+  hostname: argocd.{{.Values.env}}.{{ .Values.dns.hostname }}
+  prefix: /(.*)
+  prefix_regex: true
+  regex_rewrite:
+    pattern: /(.*)
+    substitution: /\1
+  service: https://argocd-server.{{ .Release.Namespace }}:443
+  docs:
+    ignored: true

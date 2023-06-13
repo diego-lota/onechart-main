@@ -1,0 +1,10 @@
+cert-manager:
+  enabled: true
+  installCRDs: true
+
+env: local
+
+clusterissuer:
+  name: cluster-issuer
+  spec:
+    selfSigned: {}

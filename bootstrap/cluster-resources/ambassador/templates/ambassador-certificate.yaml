@@ -1,0 +1,30 @@
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: cluster-cert
+  namespace: ambassador
+spec:
+  secretName: cluster-cert
+  issuerRef:
+    name: cluster-issuer
+    kind: ClusterIssuer
+  dnsNames: {{toYaml .Values.certmanager.dnsNames | nindent 2}}
+
+# ---
+# apiVersion: cert-manager.io/v1
+# kind: Certificate
+# metadata:
+#   name: {{ .Values.certmanager.certname }}
+#   {{- if .Values.ambassador.namespaceOverride }}
+#   namespace:  {{ .Values.namespaceOverride }}
+#   {{ else }}
+#   namespace: {{ .Release.Namespace }}
+#   {{ end }}
+# spec:
+#   secretName: {{ .Values.certmanager.certname }}
+#   issuerRef:
+#     name: {{ .Values.certmanager.issuer }}
+#     kind: ClusterIssuer
+#   dnsNames:
+#   - '*.eddanileyko.com'

@@ -1,0 +1,23 @@
+---
+apiVersion: v2
+name: kratos
+description: A Helm chart for Kubernetes with Ory Kratos and the Kratos UI as subcharts
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+
+dependencies:
+  - name: kratos
+    version: 0.28.0
+    repository: https://k8s.ory.sh/helm/charts
+    condition: kratos.enabled
+  - name: postgresql
+    condition: database.enabled
+    version: 0.2.3
+    alias: database
+    repository: https://cetic.github.io/helm-charts
+  - name: pgadmin4
+    condition: database.enabled
+    version: 1.14.5
+    alias: pgadmin
+    repository: https://helm.runix.net

@@ -1,0 +1,20 @@
+cert-manager:
+  enabled: true
+  installCRDs: true
+
+env: prod
+
+clusterissuer:
+  name: cluster-issuer
+  spec:
+    acme:
+      email: hello@eddanileyko.com
+      server:  https://acme-v02.api.letsencrypt.org/directory
+      privateKeySecretRef:
+        name: tls-cert
+      solvers:
+      - dns01:
+          cloudflare:
+            apiTokenSecretRef:
+              name: cloudflare-api-token
+              key: api-key

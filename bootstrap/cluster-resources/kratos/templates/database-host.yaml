@@ -1,0 +1,21 @@
+apiVersion: getambassador.io/v2
+kind: Host
+metadata:
+  annotations:
+    external-dns.ambassador-service: ambassador.ambassador
+  name: database-host
+  namespace: ambassador
+spec:
+  acmeProvider:
+    email: hello@eddanileyko.com
+  hostname: db.{{.Values.env}}.{{.Values.dns.hostname}}
+  requestPolicy:
+    insecure:
+      action: Redirect
+  selector:
+    matchLabels:
+      product: database
+  tlsContext:
+    name: cluster-cert-context
+  tlsSecret:
+    name: cluster-cert

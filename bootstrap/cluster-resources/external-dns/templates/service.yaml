@@ -1,0 +1,17 @@
+---
+# Source: external-dns/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: external-dns
+  namespace: {{ .Release.Name }}
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: external-dns
+    app.kubernetes.io/instance: release-name
+  ports:
+    - name: http
+      port: 7979
+      targetPort: http
+      protocol: TCP

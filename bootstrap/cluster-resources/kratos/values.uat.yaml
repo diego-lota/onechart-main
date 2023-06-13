@@ -1,0 +1,173 @@
+env: uat
+certmanager:
+  certname: cluster-cert
+  issuer: cluster-issuer
+dns:
+  hostname: eddanileyko.com
+  email: hello@eddanileyko.com
+
+configmap:
+  annotations:
+    Env: 'uat'
+
+watcher:
+  enabled: false
+
+kratos:
+  configmap:
+    annotations:
+      Env: 'local'
+
+  secret:
+    cookie:
+      - bXljb29raWVrZXkK
+    # -- switch to false to prevent creating the secret
+    enabled: true
+    # -- Provide custom name of existing secret, or custom name of secret to be created
+    nameOverride: ""
+    # nameOverride: "myCustomSecret"
+    # -- Annotations to be added to secret. Annotations are added only when secret is being created. Existing secret will not be modified.
+    secretAnnotations:
+      # Create the secret before installation, and only then. This saves the secret from regenerating during an upgrade
+      # pre-upgrade is needed to upgrade from 0.7.0 to newer. Can be deleted afterwards.
+      helm.sh/hook-weight: "0"
+      helm.sh/hook: "pre-install, pre-upgrade"
+      helm.sh/hook-delete-policy: "before-hook-creation"
+      helm.sh/resource-policy: "keep"
+    # -- switch to false to prevent checksum annotations being maintained and propogated to the pods
+    hashSumEnabled: true
+
+  courier:
+    enabled: 1
+
+  watcher:
+    enabled: false
+
+  kratos:
+    development: true
+    config:
+      dsn: postgres://kratos:kratos@database.database.svc.cluster.local:5432/kratos?sslmode=disable
+      secrets:
+        default:
+          - dolore occaecat nostrud Ut
+          - sit et commodoaute ut voluptate consectetur Duis
+      identity:
+        default_schema_id: default
+        schemas:
+          - id: default
+            url: file:///etc/config/identity.default.schema.json
+      courier:
+        smtp:
+          connection_uri: smtp://smtp-service.smtp:25?skip_ssl_verify=false&disable_starttls=true
+      selfservice:
+        default_browser_return_url: https://profile-octaviius.vercel.app
+        flows:
+          registration:
+            ui_url: https://home-octaviius.vercel.app/
+      #log:
+        #leak_sensitive_value: true
+      session:
+        cookie:
+          domain: "https://home-octaviius.vercel.app/"
+          same_site: None
+      cookies:
+        domain: 127.0.0.1.nip.io
+        same_site: None
+      serve:
+        public:
+          base_url: "https://auth.uat.eddanileyko.com"
+          cors:
+            enabled: true
+            allowed_origins:
+              - "*-octavius.vercel.app"
+            allowed_methods:
+              - POST
+              - GET
+              - PUT
+              - PATCH
+              - DELETE
+            allowed_headers:
+              - Authorization
+              - Cookie
+              - Content-Type
+            exposed_headers:
+              - Content-Type
+              - Set-Cookie
+    automigration:
+      enabled: true
+    identitySchemas:
+      "identity.default.schema.json": |
+        {
+          "$id": "https://schemas.ory.sh/presets/kratos/identity.email.schema.json",
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "Person",
+          "type": "object",
+          "properties": {
+            "traits": {
+              "type": "object",
+              "properties": {
+                "email": {
+                  "type": "string",
+                  "format": "email",
+                  "title": "E-Mail",
+                  "ory.sh/kratos": {
+                    "credentials": {
+                      "password": {
+                        "identifier": true
+                      }
+                    },
+                    "recovery": {
+                      "via": "email"
+                    },
+                    "verification": {
+                      "via": "email"
+                    }
+                  }
+                }
+              },
+              "required": [
+                "email"
+              ],
+              "additionalProperties": false
+            }
+          }
+        }
+
+database:
+  enabled: true
+  username: postgres
+  password: postgres
+  database: postgres
+  port: 5432
+  dataDir: /var/lib/postgresql/data/pgdata
+  initdbscripts: |-
+    #!/bin/bash
+    su - postgres << EOF
+    psql -c "CREATE DATABASE kratos; CREATE USER kratos PASSWORD 'kratos'; GRANT CONNECT ON DATABASE kratos TO kratos;"
+    EOF
+
+
+# PG ADMIN
+pgadmin:
+  env:
+    email: admin@pg.com
+    password: admin
+  # username: admin
+  ## pgadmin admin password
+  # existingPasswordSecret: ""
+  tls: false
+  persistence:
+    enabled: false
+
+  ## Expose the pgAdmin service to be accessed from outside
+  ## the cluster (LoadBalancer service).
+  ## or access it from within the cluster (ClusterIP service).
+  ## Set the service type and the port to serve it.
+  ## ref: http://kubernetes.io/docs/user-guide/services/
+  ##
+  service:
+    name: pgadmin
+    type: ClusterIP
+    port: 80
+    tlsport: 443
+    annotations: {}

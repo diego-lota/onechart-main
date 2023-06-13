@@ -1,0 +1,4 @@
+# we ignore the accesstoken.txt
+accesstoken.txt
+Chart.lock
+apps/**/charts

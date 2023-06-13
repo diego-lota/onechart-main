@@ -1,0 +1,22 @@
+env: local
+
+certmanager:
+  certname: cluster-cert
+  issuer: cluster-issuer
+dns:
+  hostname: 127.0.0.1.nip.io
+  email: hello@eddanileyko.com
+
+imageUpdater:
+  logLevel: debug
+
+ecrUpdater:
+  serviceAccount: ecr-updater
+  secretname: ecr-credentials
+  roleName: AmazonEC2ContainerRegistryReadOnly
+  image: gtsopour/awscli-kubectl:latest
+
+aws:
+  accountId: "553164963073" 
+  region: "us-east-1"
+  secretname: "aws-credentials"

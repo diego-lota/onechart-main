@@ -1,0 +1,7 @@
+# TODO - allow definition of the entire clusterissuer spec via values.yaml
+---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: {{ .Values.clusterissuer.name }}
+spec: {{ toYaml .Values.clusterissuer.spec | nindent 2 }}

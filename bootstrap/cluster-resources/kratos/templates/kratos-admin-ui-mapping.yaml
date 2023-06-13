@@ -1,0 +1,19 @@
+---
+apiVersion: getambassador.io/v3alpha1
+kind: Mapping
+metadata:
+  annotations:
+  labels:
+    product: kratos
+  name: kratos-admin-ui
+  namespace: ambassador
+spec:
+  hostname: auth-admin.{{.Values.env}}.{{ .Values.dns.hostname }}
+  prefix: /(.*)
+  prefix_regex: true
+  regex_rewrite:
+    pattern: /(.*)
+    substitution: /\1
+  service: http://kratos-admin-ui.kratos:80
+  docs:
+    ignored: true

@@ -1,0 +1,30 @@
+name: Development environment integration
+
+env:
+  APP_ENV: dev
+
+on:
+  push:
+    branches: [ main_xxxx ]
+    
+jobs:
+  build:
+    name: Update chart version
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Update Version
+      run: |
+          app_name=$(echo ${{ github.repository }}| cut -d/ -f2)
+          git_hash=$(git rev-parse --short "$GITHUB_SHA")
+          version=$(cat ./apps/argocd/values.yaml | grep tag: | awk '{print $2}')
+          sed -i "s/$version/onechart.${{ env.APP_ENV }}.$git_hash/" ./apps/argocd/values.yaml
+
+    - name: Commit and push changes
+      uses: devops-infra/action-commit-push@v0.3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        commit_message: (Version updated) ${{ github.event.head_commit.message }}

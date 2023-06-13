@@ -1,0 +1,12 @@
+apiVersion: v2
+name: guide-profiles
+description: A Helm chart for the guide-profiles service
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+
+dependencies:
+  - name: guide-profiles
+    alias: guideProfiles
+    version: "0.1.0"
+    repository: oci://553164963073.dkr.ecr.us-east-1.amazonaws.com

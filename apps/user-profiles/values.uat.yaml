@@ -1,0 +1,5 @@
+userProfiles:
+  replicaCount: 1
+  env: uat
+  dns:
+    hostname: "eddanileyko.com"

@@ -1,0 +1,64 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  annotations:
+    argocd-autopilot.argoproj-labs.io/default-dest-server: https://kubernetes.default.svc
+    argocd.argoproj.io/sync-options: PruneLast=true
+    argocd.argoproj.io/sync-wave: "-2"
+  creationTimestamp: null
+  name: api-services
+  namespace: argocd
+spec:
+  clusterResourceWhitelist:
+  - group: '*'
+    kind: '*'
+  description: uat api services project
+  destinations:
+  - namespace: '*'
+    server: '*'
+  namespaceResourceWhitelist:
+  - group: '*'
+    kind: '*'
+  sourceRepos:
+  - '*'
+status: {}
+
+---
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  creationTimestamp: null
+  name: api-services
+  namespace: argocd
+spec:
+  generators:
+  - git:
+      repoURL: https://github.com/octaviius/onechart.git
+      revision: "HEAD"
+      directories:
+      - path: apps/*
+  template:
+    metadata:
+      name: '{{ path.basename }}'
+    spec:
+      project: api-services
+      source:
+        repoURL: https://github.com/octaviius/onechart.git
+        targetRevision: HEAD
+        path: '{{ path }}'
+        helm:
+          parameters:
+          - name: image.repository
+            value: ghcr.io/octaviius/{{ path.basename }}
+          valueFiles:
+            - values.uat.yaml
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: '{{ path.basename }}'
+      syncPolicy:
+        syncOptions:
+        - CreateNamespace=true
+        automated:
+          allowEmpty: true
+          prune: true
+          selfHeal: true

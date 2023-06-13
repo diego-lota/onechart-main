@@ -1,0 +1,44 @@
+# ---
+# apiVersion: getambassador.io/v3alpha1
+# kind: Mapping
+# metadata:
+#   annotations:
+#   labels:
+#     product: aes
+#   name: ambassador-admin
+#   {{- if .Values.ambassador.namespaceOverride }}
+#   namespace:  {{ .Values.namespaceOverride }}
+#   {{ else }}
+#   namespace: {{ .Release.Namespace }}
+#   {{ end }}
+# spec:
+#   hostname: {{ .Release.Name }}-{{.Values.env}}.{{ .Values.dns.hostname }}
+#   prefix: /(.*)
+#   prefix_regex: true
+#   regex_rewrite:
+#     pattern: /(.*)
+#     substitution: /\1
+#   service: https://ambassador-admin.ambassador:8877
+#   docs:
+#     ignored: true
+
+
+---
+apiVersion: getambassador.io/v3alpha1
+kind: Mapping
+metadata:
+  annotations:
+  labels:
+    product: aes
+  name: ambassador-admin
+  namespace: ambassador
+spec:
+  hostname: ambassador.{{.Values.env}}.{{ .Values.dns.hostname }}
+  prefix: /(.*)
+  prefix_regex: true
+  regex_rewrite:
+    pattern: /(.*)
+    substitution: /\1
+  service: https://ambassador-admin.ambassador:8877
+  docs:
+    ignored: true

@@ -1,0 +1,19 @@
+---
+apiVersion: getambassador.io/v3alpha1
+kind: Mapping
+metadata:
+  annotations:
+  labels:
+    product: database
+  name: database-admin-mapping
+  namespace: {{ .Release.Namespace }}
+spec:
+  hostname: db-admin.{{ .Values.env }}.{{ .Values.dns.hostname }}
+  prefix: /(.*)
+  prefix_regex: true
+  regex_rewrite:
+    pattern: /(.*)
+    substitution: /\1
+  service: database-admin.{{ .Release.Namespace }}
+  docs:
+    ignored: true

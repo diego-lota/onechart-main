@@ -1,0 +1,22 @@
+---
+apiVersion: getambassador.io/v3alpha1
+kind: Host
+metadata:
+  name: kratos-public-host
+  namespace: ambassador
+  annotations:
+    external-dns.ambassador-service: ambassador.ambassador
+spec:
+  hostname: auth.{{.Values.env}}.{{ .Values.dns.hostname }}
+  mappingSelector:
+    matchLabels:
+      product: kratos
+  acmeProvider:
+    email: {{ .Values.dns.email }}
+  tlsSecret:
+    name: {{ .Values.certmanager.certname }}
+  tlsContext:
+    name: {{ .Values.certmanager.certname }}-context
+  requestPolicy:
+    insecure:
+      action: Redirect

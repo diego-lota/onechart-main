@@ -1,0 +1,10 @@
+---
+apiVersion: getambassador.io/v3alpha1
+kind: TLSContext
+metadata:
+  name: cluster-cert-context
+  namespace: ambassador
+spec:
+  secret: cluster-cert
+  min_tls_version: v1.2
+  hosts: {{toYaml .Values.certmanager.dnsNames | nindent 2}}

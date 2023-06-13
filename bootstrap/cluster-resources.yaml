@@ -1,0 +1,35 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: cluster-addons
+  namespace: argocd
+spec:
+  generators:
+  - git:
+      repoURL: https://github.com/octaviius/onechart.git
+      revision: "HEAD"
+      directories:
+      - path: bootstrap/cluster-resources/*
+  template:
+    metadata:
+      name: '{{ path.basename }}'
+    spec:
+      project: "default"
+      source:
+        repoURL: https://github.com/octaviius/onechart.git
+        targetRevision: HEAD
+        path: '{{ path }}'
+        helm:
+          valueFiles:
+            - values.uat.yaml
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: '{{ path.basename }}'
+      syncPolicy:
+        syncOptions:
+        - CreateNamespace=true
+        automated:
+          allowEmpty: true
+          prune: true
+          selfHeal: true

@@ -1,0 +1,21 @@
+env: prod
+
+certmanager:
+  certname: cluster-cert
+  issuer: cluster-issuer
+dns:
+  hostname: eddanileyko.com
+  email: hello@eddanileyko.com
+
+imageUpdater:
+  logLevel: debug
+
+ecrUpdater:
+  serviceAccount: ecr-updater
+  secretname: ecr-credentials
+  image: gtsopour/awscli-kubectl:latest
+
+aws:
+  accountId: "553164963073" 
+  region: "us-east-1"
+  secretname: "aws-credentials"

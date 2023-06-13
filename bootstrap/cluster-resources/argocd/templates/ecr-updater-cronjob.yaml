@@ -1,0 +1,120 @@
+# This CronJob will update the ecr credentiasl every 6 hours by patching
+# the .data.password key in the secret with the new credentials fetched from ecr
+# using the aws cli `aws ecr get-login-password --region ${REGION}` command
+# It will also update the service account to use the new credentials
+# This is needed because the ecr credentials expire every 12 hours
+# and argocd does not have a way to update the credentials automatically
+# This is a workaround until argocd supports this natively.
+#  This CronJob also will structure logging outputs to be more readable by machines
+#  and humans alike using the key value format. Command outputs are also logged in
+#  the same format.
+#
+# Argo CD uses a secret to store repo credentials in a key called "password"
+# This CronJob has different behaviour if the environment variable is set to
+# "local" or "uat"/"prod"
+# If the environment variable is set to "local" then the secret will be patched
+# directly with the new credentials
+# If the environment variable is set to "uat"/"prod" then aws secrets manager will
+# be used to store the credentials and the secret will be patched by external-secrets
+# The ecr credentials stored in aws will be prefixed with the environment name
+# This is done to avoid conflicts between environments
+# the actual secret is something like:
+# {
+#   "enableOCI":"true",
+#   "password":"<access token>", <- ecr-update will update this key
+#   "project":"api-services",
+#   "repo-name":"private-helm-repo",
+#   "type":"helm",
+#   "url":"1234567890.dkr.ecr.us-east-1.amazonaws.com",
+#   "username":"AWS"
+# }
+
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ .Values.ecrUpdater.secretname }}-updater
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  schedule: '0 */6 * * *'
+  successfulJobsHistoryLimit: 0
+  jobTemplate:
+    metadata:
+      name: {{ .Values.ecrUpdater.secretname }}-updater
+      namespace: {{ .Release.Namespace }}
+    spec:
+      template:
+        spec:
+          serviceAccountName: {{ .Values.ecrUpdater.serviceAccount }}
+          restartPolicy: OnFailure
+          containers:
+            - image: {{ .Values.ecrUpdater.image }}
+              imagePullPolicy: IfNotPresent
+              name: {{ .Values.ecrUpdater.serviceAccount }}-updater
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  echo "time=\"$(date +'%Y-%m-%dT%H:%M:%SZ')\" level=\"info\" environment=\"${ENVIRONMENT}\" msg=\"Starting ecr updater\""
+                  echo "time=\"$(date +'%Y-%m-%dT%H:%M:%SZ')\" level=\"info\" environment=\"${ENVIRONMENT}\" msg=\"Fetching new credentials\""
+                  TOKEN=$(aws ecr get-login-password --region ${REGION}) &> /tmp/output
+                  if [ $? -eq 0 ]; then
+                    echo "time=\"$(date +'%Y-%m-%dT%H:%M:%SZ')\" level=\"info\" environment=\"${ENVIRONMENT}\" msg=\"Credentials fetched\""
+                  else
+                    echo "time=\"$(date +'%Y-%m-%dT%H:%M:%SZ')\" level=\"error\" environment=\"${ENVIRONMENT}\" msg=\"Failed to fetch credentials\" reason=\"$(cat /tmp/output | tr -s '\n')\""
+                    echo "time=\"$(date +'%Y-%m-%dT%H:%M:%SZ')\" level=\"info\" environment=\"${ENVIRONMENT}\" msg=\"Exiting\""
+                    exit 1
+                  fi
+                  if [ $ENVIRONMENT = "local" ]; then
+                    echo "time=\"$(date +'%Y-%m-%dT%H:%M:%SZ')\" level=\"info\" environment=\"${ENVIRONMENT}\" msg=\"Job will update secret directly\""
+                    new_secret="{\"data\":{\"password\":\"${TOKEN}\"}}"
+                    alias command="kubectl patch secret ${SECRET_NAME} -p '${new_secret}'"
+                  else
+                    echo "time=\"$(date +'%Y-%m-%dT%H:%M:%SZ')\" level=\"info\" environment=\"${ENVIRONMENT}\" msg=\"Job will update secret in secrets manager\""
+                    SECRET_NAME=${ENVIRONMENT}-${SECRET_NAME}
+                    echo "time=\"$(date +'%Y-%m-%dT%H:%M:%SZ')\" level=\"info\" environment=\"${ENVIRONMENT}\" msg=\"Fetching current secret\" secret=\"${SECRET_NAME}\""
+                    json=$(aws secretsmanager get-secret-value --secret-id ${SECRET_NAME} --query SecretString --output text)
+                    echo "time=\"$(date +'%Y-%m-%dT%H:%M:%SZ')\" level=\"info\" environment=\"${ENVIRONMENT}\" msg=\"Current secret fetched\" payload=\"${json}\""
+                    old_token=$(echo $json | sed -n 's/.*"password":"\([^"]*\).*/\1/p')
+                    echo "time=\"$(date +'%Y-%m-%dT%H:%M:%SZ')\" level=\"info\" environment=\"${ENVIRONMENT}\" msg=\"Constructing new secret\""
+                    new_secret=$(echo "$json" | sed "s/\"password\":\"$old_token\"/\"password\":\"$TOKEN\"/")
+                    echo "time=\"$(date +'%Y-%m-%dT%H:%M:%SZ')\" level=\"info\" environment=\"${ENVIRONMENT}\" msg=\"New secret constructed\" payload=\"${new_secret}\""
+                    if [ -z "$new_secret" ]; then
+                      echo "time=\"$(date +'%Y-%m-%dT%H:%M:%SZ')\" level=\"error\" environment=\"${ENVIRONMENT}\" msg=\"Failed to construct new secret\" reason=\"new secret is empty\""
+                      echo "time=\"$(date +'%Y-%m-%dT%H:%M:%SZ')\" level=\"info\" environment=\"${ENVIRONMENT}\" msg=\"Exiting\""
+                      exit 1
+                    fi
+                    alias command="aws secretsmanager update-secret --secret-id ${SECRET_NAME} --secret-string '${new_secret}'"
+                  fi
+                  echo "time=\"$(date +'%Y-%m-%dT%H:%M:%SZ')\" level=\"info\" environment=\"${ENVIRONMENT}\" msg=\"Updating secret\" secret=\"${SECRET_NAME}\""
+                  echo "time=\"$(date +'%Y-%m-%dT%H:%M:%SZ')\" level=\"info\" environment=\"${ENVIRONMENT}\" msg=\"Executing command\" command=\"$(alias command | cut -d= -f2)\""
+                  command &> /tmp/output
+                  if [ $? -eq 0 ]; then
+                    echo "time=\"$(date +'%Y-%m-%dT%H:%M:%SZ')\" level=\"info\" environment=\"${ENVIRONMENT}\" msg=\"Secret updated\""
+                  else
+                    echo "time=\"$(date +'%Y-%m-%dT%H:%M:%SZ')\" level=\"error\" environment=\"${ENVIRONMENT}\" msg=\"Failed to update secret\" reason=\"$(cat /tmp/output)\" payload=\"${new_secret}\""
+                    echo "time=\"$(date +'%Y-%m-%dT%H:%M:%SZ')\" level=\"info\" environment=\"${ENVIRONMENT}\" msg=\"Exiting\""
+                    exit 1
+                  fi
+              env:
+                - name: ENVIRONMENT
+                  value: {{ .Values.env }}
+                - name: SERVICE_ACCOUNT
+                  value: {{ .Values.ecrUpdater.serviceAccount }} # this will be the IRSA service account
+                - name: SECRET_NAME
+                  value: {{ .Values.ecrUpdater.secretname }}
+                - name: REGION
+                  value: {{ .Values.aws.region }}
+                {{- if eq .Values.env "local" }}
+                - name: AWS_ACCESS_KEY_ID
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.aws.secretname }}
+                      key: accessKeyId
+                - name: AWS_SECRET_ACCESS_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.aws.secretname }}
+                      key: secretAccessKey
+                {{- end }}

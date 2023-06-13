@@ -1,0 +1,71 @@
+
+# https://www.getambassador.io/docs/emissary/latest/howtos/configure-communications/#basic-http-and-https
+# Both Listeners use protocol: HTTPS to allow Envoy to inspect incoming connections,
+# determine whether or not TLS is in play, and set X-Forwarded-Proto appropriately.
+# The securityModel then specifies that X-Forwarded-Proto will determine whether requests
+# will be considered secure or insecure.
+#
+# The hostBinding shown here will allow any Host in the same namespace as the Listeners
+# to be associated with both Listeners; in turn, that will allow access to that Host's
+# Mappings from either port. For greater control, use a selector instead.
+# ---
+# apiVersion: getambassador.io/v3alpha1
+# kind: Listener
+# metadata:
+#   name: internal-http-8080-listener
+#   {{- if .Values.ambassador.namespaceOverride }}
+#   namespace: {{ .Values.ambassador.namespaceOverride }}
+#   {{ else }}
+#   namespace: {{ .Release.Namespace }}
+#   {{ end }}
+# spec:
+#   port: 8080
+#   protocol: HTTPS
+#   securityModel: XFP
+#   hostBinding:
+#     namespace:
+#       from: ALL
+# ---
+# apiVersion: getambassador.io/v3alpha1
+# kind: Listener
+# metadata:
+#   name: internal-https-8443-listener
+#   {{- if .Values.ambassador.namespaceOverride }}
+#   namespace: {{ .Values.ambassador.namespaceOverride }}
+#   {{ else }}
+#   namespace: {{ .Release.Namespace }}
+#   {{ end }}
+# spec:
+#   port: 8443
+#   protocol: HTTPS
+#   securityModel: XFP
+#   hostBinding:
+#     namespace:
+#       from: ALL
+
+---
+apiVersion: getambassador.io/v3alpha1
+kind: Listener
+metadata:
+  name: internal-http-8080-listener
+  namespace: ambassador
+spec:
+  port: 8080
+  protocol: HTTPS
+  securityModel: XFP
+  hostBinding:
+    namespace:
+      from: ALL
+---
+apiVersion: getambassador.io/v3alpha1
+kind: Listener
+metadata:
+  name: internal-https-8443-listener
+  namespace: ambassador
+spec:
+  port: 8443
+  protocol: HTTPS
+  securityModel: XFP
+  hostBinding:
+    namespace:
+      from: ALL

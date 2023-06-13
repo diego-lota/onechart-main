@@ -1,0 +1,12 @@
+apiVersion: getambassador.io/v3alpha1
+kind: Listener
+metadata:
+  name: internal-http-5432-listener
+  namespace: ambassador
+spec:
+  port: 5432
+  protocol: TCP
+  securityModel: XFP
+  hostBinding:
+    namespace:
+      from: SELF

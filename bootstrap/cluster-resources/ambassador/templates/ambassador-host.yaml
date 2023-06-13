@@ -1,0 +1,51 @@
+# ---
+# apiVersion: getambassador.io/v3alpha1
+# kind: Host
+# metadata:
+#   name: ambassador-host
+#   {{- if .Values.ambassador.namespaceOverride }}
+#   namespace:  {{ .Values.ambassador.namespaceOverride }}
+#   annotations:
+#     external-dns.ambassador-service: {{ .Values.ambassador.namespaceOverride }}.{{ .Release.Name }}
+#   {{ else }}
+#   namespace: {{ .Release.Namespace }}
+#   annotations:
+#     external-dns.ambassador-service: {{ .Release.Name }}.{{ .Release.Name }}
+#   {{ end }}
+# spec:
+#   hostname: ambassador-{{.Values.env}}.{{ .Values.dns.hostname }}
+#   mappingSelector:
+#     matchLabels:
+#       product: aes
+#   acmeProvider:
+#     email: {{ .Values.dns.email }}
+#   tlsSecret:
+#     name: {{ .Values.certmanager.certname }}
+#   tlsContext:
+#     name: {{ .Values.certmanager.certname }}-context
+#   requestPolicy:
+#     insecure:
+#       action: Redirect
+
+---
+apiVersion: getambassador.io/v3alpha1
+kind: Host
+metadata:
+  name: ambassador-host
+  namespace:  ambassador
+  annotations:
+    external-dns.ambassador-service: ambassador.ambassador
+spec:
+  hostname: ambassador.{{.Values.env}}.{{ .Values.dns.hostname }}
+  mappingSelector:
+    matchLabels:
+      product: aes
+  acmeProvider:
+    email: hello@eddanileyko.com
+  tlsSecret:
+    name: cluster-cert
+  tlsContext:
+    name: cluster-cert-context
+  requestPolicy:
+    insecure:
+      action: Redirect
